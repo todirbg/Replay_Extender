@@ -1,0 +1,17 @@
+##########################################
+#ATTENTION!!!DANGEROUS!!!
+#RECORD INTERVAL SETTING
+#THIS IS A ROPE GIVEN TO LET ONE HANG HIMSELF!!!
+#SET IT TO 0.0 TO RECORD EVERY FLIGHT LOOP
+#DEFAULT SET TO 0.1s
+%0.1
+##########################################
+##############DATAREFS SECTION############
+#It is planes author responsibility not to record datarefs already saved for replay by X-Plane
+#Add your datarefs here. Only float and int types are supported. Array datarefs must be accessed by index.
+#Only writable datarefs can be recorded/replayed. Read only drefs will be disregarded.
+#Dararef orded is not important or guaranteed, but generaly add default drefs before custom ones.
+#sim default datarefs
+sim/cockpit2/engine/actuators/ignition_on[0]
+#custom datarefs
+

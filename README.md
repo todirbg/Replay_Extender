@@ -7,4 +7,8 @@ It does not record on file for later use. Replay Extender is aircraft plugin not
 Datarefs are defined in rextconf.txt file. Datarefs must be writable in order to be replayed. 
 It is responsibility of the aircraft author not to record datarefs that are tracked by X-Plane itself.
 
+Compatible with X-Plane 10 and 11 WIN/LIN/MAC
+
+*Only xp11/Win/Lin tested by me
+
 Licensed under GPL v2

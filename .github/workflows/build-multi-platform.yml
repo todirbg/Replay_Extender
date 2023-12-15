@@ -37,7 +37,6 @@ jobs:
       shell: bash   
       run:  |
             sudo apt-get update
-            sudo apt-get update
             sudo apt-get install mingw-w64 
 
     - name: Build

@@ -26,15 +26,19 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Set env vals
+      shell: bash
+      run: |
+        echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
+        echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >> "$GITHUB_ENV"
+
     - name:  Install MinGW
       if: runner.os == 'Linux'
       shell: bash   
       run:  |
             sudo apt-get update
             sudo apt-get update
-            sudo apt-get install mingw-w64
-            echo "sha_short=$(git rev-parse --short "$GITHUB_SHA")" >> "$GITHUB_ENV"
-            echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >> "$GITHUB_ENV"     
+            sudo apt-get install mingw-w64 
 
     - name: Build
       shell: bash   

@@ -6,7 +6,7 @@
   Created by Todir 2021
   Derived from
   BD-5J Plugin for X-Plane 11
-  Copyright © 2019 by Quantumac
+  Copyright ï¿½ 2019 by Quantumac
 
   GNU GENERAL PUBLIC LICENSE, Version 2, June 1991
 
@@ -88,6 +88,8 @@ static XPLMCreateFlightLoop_t sAfterFlightModelLoop;
 
 static int                    sWasInReplay                            = 0;
 static float sIntervalBetweenAfterFlightLoopCallbacks   = 0.01;     // seconds
+static size_t maxReplayCount = 0;
+static float recordTolerance = 0;
 
 static vector <FloatDataRefRecorder> sXPFloatValRecorders;
 static vector <IntDataRefRecorder>   sXPIntValRecorders;
@@ -429,8 +431,8 @@ static void LoadConf()
 
               if(interval != NAN)
               {
-                  if(interval == 0.0)
-                        interval = -1.0;
+                  if(interval == 0.0f)
+                        interval = -1.0f;
 
                 sIntervalBetweenAfterFlightLoopCallbacks = interval;
               }
@@ -441,6 +443,33 @@ static void LoadConf()
           else if(line.substr(0,1) == "#")//comment symbol
           {
             continue;
+          }
+          else if(line.substr(0,1) == "$")//max recorded samples
+          {
+              size_t samples = stoul(line.substr(1),nullptr);
+
+              if(samples > 0)
+              {
+
+                maxReplayCount = samples;
+              }
+
+
+            DPRINT("Maximum recorded samples set to: %zu\n",maxReplayCount)
+          }
+          else if(line.substr(0,1) == "&")//float point value change
+          {
+              float tolerance = stof(line.substr(1),nullptr);
+
+              if(tolerance != NAN)
+              {
+                  if(tolerance < 0.0f)
+                        tolerance = 0.0f;
+
+                recordTolerance = tolerance;
+              }
+
+            DPRINT("Float recording tolerance set to: %f \n",recordTolerance)
           }
           else
           {
@@ -481,7 +510,11 @@ static void LoadConf()
 static void RegisterDrefs()
 {
     static unsigned attempts = 0;
-        DPRINT("Daterefs remaining %zu\n",inDrefs.size());
+    static unsigned remaining = 0;
+        if(remaining != inDrefs.size()){
+          DPRINT("Daterefs remaining %zu\n",inDrefs.size());
+          remaining = inDrefs.size();
+        }
         for (long long unsigned i=0; i<inDrefs.size(); i++)
         {
                 //If dataref exsists push it to the coresponding vecor
@@ -494,7 +527,7 @@ static void RegisterDrefs()
                         //Try to guess what is the type of the dataref and register it accordingly.
                         if((type & xplmType_Float) == xplmType_Float)
                         {
-                            sXPFloatValRecorders.push_back(FloatDataRefRecorder(inDrefs.front().first, temp));
+                            sXPFloatValRecorders.push_back(FloatDataRefRecorder(inDrefs.front().first, temp, -1, maxReplayCount, recordTolerance));
                             DPRINT("Float type dateref registered %s\n",inDrefs.front().first.c_str());
                         }
                         else if((type & xplmType_Int) == xplmType_Int)
@@ -512,7 +545,7 @@ static void RegisterDrefs()
                             if(inDrefs.front().second >= 0)
                             {
                                 string dref_name = inDrefs.front().first+"[" + to_string(inDrefs.front().second)+"]";//Restore the name with the index
-                                sXPFloatValRecorders.push_back(FloatDataRefRecorder(dref_name, temp, inDrefs.front().second));
+                                sXPFloatValRecorders.push_back(FloatDataRefRecorder(dref_name, temp, inDrefs.front().second, maxReplayCount, recordTolerance));
                                 DPRINT("Float type array member dateref registered %s\n",dref_name.c_str());
                             }
                             else
@@ -536,7 +569,7 @@ static void RegisterDrefs()
                         }
                         else
                         {
-                            DPRINT("Dateref type not supported %s. Only float and int types are supported\n", inDrefs.front().first.c_str());
+                            DPRINT("Dateref type not supported %s.\n", inDrefs.front().first.c_str());
 
                         }
                     }
@@ -555,7 +588,7 @@ static void RegisterDrefs()
                 }
 
         }
-        if(++attempts > 200)//Enough is enough. If a dataref does not exist/is created in, lets say 100 loops, it is probably wrong. Give up.
+        if(++attempts > 200)//Enough is enough. If a dataref does not exist/is created in, lets say 200 loops, it is probably wrong. Give up.
         {
             for(size_t i = 0; i<inDrefs.size(); i++)
             {

@@ -35,6 +35,7 @@
 #include "XPLMProcessing.h"
 #include "XPLMDataAccess.h"
 #include "XPLMUtilities.h"
+#include "XPLMMenus.h"
 
 #include "DebugPrint.h"
 #include "DataRefRecorder.h"
@@ -69,8 +70,10 @@ static void UnregisterPrimaryCallbacks();
 
 static void PrintRecorderStatsToLog();
 
+static void menu_handler(void *, void *);
+
 static const char *sPluginName                          = "Replay Extender Plugin";
-static const char *sPluginSig                           =  BUILD_VERSION;//deefined in makefile
+static const char *sPluginSig                           =  BUILD_VERSION;//defined in makefile
 static const char *sPluginDescription                   = "Replay Extender for X-Plane";
 
 static const char *sTotalRunningTimeDataRefName         = "sim/time/total_running_time_sec";
@@ -88,7 +91,16 @@ static float sIntervalBetweenAfterFlightLoopCallbacks   = 0.01;     // seconds
 
 static vector <FloatDataRefRecorder> sXPFloatValRecorders;
 static vector <IntDataRefRecorder>   sXPIntValRecorders;
+static vector <ByteArrDataRefRecorder>   sXPByteArrRecorders;
 static queue <pair<string, int> > inDrefs;//queue for saving datarefs until registering is possible
+
+static const char *sMenuRef = "Replay Extender";
+static const char *sStartRecordLabel = "Start Recorder";
+static const char *sStopRecordLabel = "Stop Recorder";
+static bool record = false;
+static int g_menu_container_idx; // The index of our menu item in the Plugins menu
+static int mindex = 0;
+static XPLMMenuID g_menu_id; // The menu container we'll append all our menu items to
 
 
 //--------------------------------------------------------------------------------------------------------------------
@@ -108,7 +120,16 @@ PLUGIN_API int XPluginStart(char *outName,
   strcpy(outSig,  sPluginSig);
   strcpy(outDesc, sPluginDescription);
 
+    g_menu_container_idx = XPLMAppendMenuItem(XPLMFindPluginsMenu(), sMenuRef, 0, 0);
+	g_menu_id = XPLMCreateMenu(sMenuRef, XPLMFindPluginsMenu(), g_menu_container_idx, menu_handler, (void *) sMenuRef);
+	//XPLMAppendMenuItem(g_menu_id, "Toggle Record", (void *)"record", 1);
 
+	XPLMMenuID aircraft_menu = XPLMFindAircraftMenu();
+	if(aircraft_menu) // This will be NULL unless this plugin was loaded with an aircraft (i.e., it was located in the current aircraft's "plugins" subdirectory)
+	{
+		mindex = XPLMAppendMenuItem(g_menu_id, sStartRecordLabel, (void *)"rec", 1);
+        XPLMCheckMenuItem(g_menu_id, mindex, xplm_Menu_Unchecked);
+	}
   //
   // Find X-Plane datarefs we need
   //
@@ -127,6 +148,7 @@ PLUGIN_API int XPluginStart(char *outName,
 //--------------------------------------------------------------------------------------------------------------------
 PLUGIN_API void XPluginStop(void)
 {
+  XPLMDestroyMenu(g_menu_id);
   UnregisterPrimaryCallbacks();
   PrintRecorderStatsToLog();
 }
@@ -200,6 +222,10 @@ static void ClearReplayRecorders()
     {
       sXPIntValRecorders[i].Init();
     }
+  for (i = 0; i < sXPByteArrRecorders.size(); i++)
+    {
+      sXPByteArrRecorders[i].Init();
+    }
 
   sWasInReplay = 0;
 }
@@ -257,7 +283,12 @@ static float AfterFlightModelLoopCallBack(float   inElapsedSinceLastCall,
   int replayTransition = (inReplay != sWasInReplay);
   sWasInReplay         = inReplay;
 
-  HandleRecordAndReplayOfExternalDataRefs(totalRunningTime, inReplay, replayTransition);
+    if(record == true)
+    {
+        HandleRecordAndReplayOfExternalDataRefs(totalRunningTime, inReplay, replayTransition);
+    }
+
+
 
   return sIntervalBetweenAfterFlightLoopCallbacks;
 }
@@ -282,6 +313,10 @@ static void HandleRecordAndReplayOfExternalDataRefs(float totalRunningTime,
         {
           sXPIntValRecorders[i].Reset();
         }
+      for (i = 0; i < sXPByteArrRecorders.size(); i++)
+        {
+          sXPByteArrRecorders[i].Reset();
+        }
     }
 
   if (!inReplay)
@@ -301,6 +336,10 @@ static void HandleRecordAndReplayOfExternalDataRefs(float totalRunningTime,
             {
               sXPIntValRecorders[i].RestoreDataRef();
             }
+          for (i = 0; i < sXPByteArrRecorders.size(); i++)
+            {
+              sXPByteArrRecorders[i].RestoreDataRef();
+            }
         }
       else
         {
@@ -312,6 +351,10 @@ static void HandleRecordAndReplayOfExternalDataRefs(float totalRunningTime,
           for (i = 0; i < sXPIntValRecorders.size(); i++)
             {
               sXPIntValRecorders[i].RecordDataRef(totalRunningTime);
+            }
+          for (i = 0; i < sXPByteArrRecorders.size(); i++)
+            {
+              sXPByteArrRecorders[i].RecordDataRef(totalRunningTime);
             }
         }
     }
@@ -328,6 +371,10 @@ static void HandleRecordAndReplayOfExternalDataRefs(float totalRunningTime,
       for (i = 0; i < sXPIntValRecorders.size(); i++)
         {
           sXPIntValRecorders[i].ReplayDataRef(totalRunningTime);
+        }
+      for (i = 0; i < sXPByteArrRecorders.size(); i++)
+        {
+          sXPByteArrRecorders[i].ReplayDataRef(totalRunningTime);
         }
     }
 }
@@ -455,6 +502,11 @@ static void RegisterDrefs()
                             sXPIntValRecorders.push_back(IntDataRefRecorder(inDrefs.front().first, temp));
                             DPRINT("Int type dateref registered %s\n",inDrefs.front().first.c_str());
                         }
+                        else if((type & xplmType_Data) == xplmType_Data)
+                        {
+                            sXPByteArrRecorders.push_back(ByteArrDataRefRecorder(inDrefs.front().first, temp));
+                            DPRINT("Byte array type dateref registered %s\n",inDrefs.front().first.c_str());
+                        }
                         else if((type & xplmType_FloatArray) == xplmType_FloatArray)
                         {
                             if(inDrefs.front().second >= 0)
@@ -503,11 +555,11 @@ static void RegisterDrefs()
                 }
 
         }
-        if(++attempts > 100)//Enough is enough. If a dataref does not exist/is created in, lets say 100 loops, it is probably wrong. Give up.
+        if(++attempts > 200)//Enough is enough. If a dataref does not exist/is created in, lets say 100 loops, it is probably wrong. Give up.
         {
             for(size_t i = 0; i<inDrefs.size(); i++)
             {
-              DPRINT("Dataref not found in 100 flight loops. Skipping... %s\n", inDrefs.front().first.c_str());
+              DPRINT("Dataref not found in 200 flight loops. Skipping... %s\n", inDrefs.front().first.c_str());
               inDrefs.pop();
             }
         }
@@ -567,7 +619,32 @@ static void PrintRecorderStatsToLog()
       DPRINT("%-60s has %zu recorded elements\n",
               sXPIntValRecorders[i].GetDataRefName(), sXPIntValRecorders[i].NumEventsRecorded());
     }
-
+  for (i = 0; i < sXPIntValRecorders.size(); i++)
+    {
+      DPRINT("%-60s has %zu recorded elements\n",
+              sXPByteArrRecorders[i].GetDataRefName(), sXPByteArrRecorders[i].NumEventsRecorded());
+    }
   DPUTS("\n");
 }
 
+
+static void menu_handler(void * in_menu_ref, void * in_item_ref)
+{
+
+	if(!strcmp((const char *)in_item_ref, "rec") && XPLMGetDatai(sInReplayModeDataRef) == 0)
+	{
+        XPLMMenuCheck check;
+        XPLMCheckMenuItemState(g_menu_id, mindex,  &check);
+		if (check == xplm_Menu_Unchecked){
+            XPLMCheckMenuItem(g_menu_id, mindex, xplm_Menu_Checked);
+            XPLMSetMenuItemName(g_menu_id, mindex, sStopRecordLabel, 0);
+            record = true;
+		}
+		else if (check == xplm_Menu_Checked){
+            XPLMCheckMenuItem(g_menu_id, mindex, xplm_Menu_Unchecked);
+            XPLMSetMenuItemName(g_menu_id, mindex, sStartRecordLabel, 0);
+            record = false;
+		}
+	}
+
+}

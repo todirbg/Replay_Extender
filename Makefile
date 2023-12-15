@@ -15,7 +15,7 @@ OBJDIR      :=  ./obj
 
 SOURCES = rext.cpp
 
-DEFINES += -DXPLM200=1 -DXPLM210=1
+DEFINES += -DXPLM200=1 -DXPLM210=1 -DXPLM300=1
 
 # get the latest commit hash in the short form
 COMMIT := $(shell git rev-parse --short HEAD)

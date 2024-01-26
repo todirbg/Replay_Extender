@@ -40,6 +40,9 @@
 #include "DebugPrint.h"
 #include "DataRefRecorder.h"
 
+#define _STR(x) #x
+#define STR(x) _STR(x)
+
 using namespace std;
 
 static void LoadConf();
@@ -73,7 +76,7 @@ static void PrintRecorderStatsToLog();
 static void menu_handler(void *, void *);
 
 static const char *sPluginName                          = "Replay Extender Plugin";
-static const char *sPluginSig                           =  BUILD_VERSION;//defined in makefile
+static const char *sPluginSig                           =  STR(BUILD_VERSION);//defined in makefile
 static const char *sPluginDescription                   = "Replay Extender for X-Plane";
 
 static const char *sTotalRunningTimeDataRefName         = "sim/time/total_running_time_sec";
@@ -652,7 +655,7 @@ static void PrintRecorderStatsToLog()
       DPRINT("%-60s has %zu recorded elements\n",
               sXPIntValRecorders[i].GetDataRefName(), sXPIntValRecorders[i].NumEventsRecorded());
     }
-  for (i = 0; i < sXPIntValRecorders.size(); i++)
+  for (i = 0; i < sXPByteArrRecorders.size(); i++)
     {
       DPRINT("%-60s has %zu recorded elements\n",
               sXPByteArrRecorders[i].GetDataRefName(), sXPByteArrRecorders[i].NumEventsRecorded());

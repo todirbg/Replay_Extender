@@ -49,7 +49,7 @@ CPPFLAGS := $(DEFINES) $(INCLUDES) -O3 -std=c++11
 ifeq ($(UNAME_S),Linux)
   CPPFLAGS +=  -fPIC -fvisibility=hidden
 else ifeq ($(UNAME_S),Darwin)
-  #CFLAGS += -stdlib=libc++ -fvisibility=hidden
+  CFLAGS += -stdlib=libc++ -fvisibility=hidden
   CPPFLAGS += -nostdinc++ -I/Library/Developer/CommandLineTools/usr/include/c++/v1 -fvisibility=hidden 
 endif
 

@@ -68,7 +68,7 @@ jobs:
     
         # We finally codesign our app bundle, specifying the Hardened runtime option
         
-        /usr/bin/codesign --force -s "$MACOS_CERTIFICATE_NAME" --options runtime ${{github.workspace}}/rext/64/mac.xpl --identifier "com.todirbg.rext" -v  
+        /usr/bin/codesign --force -s "$MACOS_CERTIFICATE_NAME" --options runtime ${{github.workspace}}/rext/64/mac.xpl -v  
 
     - name: "Notarize app bundle"
       if: runner.os == 'macOS'

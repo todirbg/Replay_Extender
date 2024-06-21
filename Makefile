@@ -50,7 +50,7 @@ ifeq ($(UNAME_S),Linux)
   CPPFLAGS +=  -fPIC -fvisibility=hidden
 else ifeq ($(UNAME_S),Darwin)
   CFLAGS += -stdlib=libc++ -fvisibility=hidden
-  CPPFLAGS += -nostdinc++ -I/Library/Developer/CommandLineTools/usr/include/c++/v1 -fvisibility=hidden 
+  CPPFLAGS += -I/Library/Developer/CommandLineTools/usr/include/c++/v1 -fvisibility=hidden 
 endif
 
 

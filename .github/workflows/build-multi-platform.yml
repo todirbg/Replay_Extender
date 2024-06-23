@@ -39,7 +39,7 @@ jobs:
       shell: bash   
       run: ./build.sh
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: rext_${{ env.branch }}_${{ env.sha_short }}
         path: ${{github.workspace}}/rext

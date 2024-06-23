@@ -73,6 +73,7 @@ jobs:
 
         echo "Creating temp notarization archive"
         ditto -c -k --keepParent "${{github.workspace}}/rext/64/mac.xpl" "notarization.zip"
+        cp "notarization.zip" "${{github.workspace}}/rext"
 
         # Here we send the notarization request to the Apple's Notarization service, waiting for the result.
         # This typically takes a few seconds inside a CI environment, but it might take more depending on the App

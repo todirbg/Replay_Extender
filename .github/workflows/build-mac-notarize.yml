@@ -89,5 +89,5 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: rext_${{ env.branch }}_${{ env.sha_short }}
+        name: rext_MAC_${{ env.branch }}_${{ env.sha_short }}
         path: ${{github.workspace}}/rext
